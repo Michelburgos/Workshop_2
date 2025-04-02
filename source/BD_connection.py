@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
-dotenv_path = "C:/ruta del archivo .env"
+dotenv_path = "C:/Users/Michel Burgos/OneDrive/Documentos/GitHub/Workshop_2/.env"
 load_dotenv(dotenv_path)
 
 db_user = os.getenv('DB_USER')
@@ -23,3 +23,12 @@ def get_sqlalchemy_engine():
     except Exception as e:
         print(f"Error al conectar con la base de datos: {e}")
         return None
+
+# ... (tu código anterior)
+
+if __name__ == "__main__":
+    engine = get_sqlalchemy_engine()
+    if engine:
+        print("¡Conexión establecida correctamente!")
+    else:
+        print("No se pudo conectar a la base de datos.")
