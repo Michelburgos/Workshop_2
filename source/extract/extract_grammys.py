@@ -1,32 +1,24 @@
-import pandas as pd
+import sys
 import os
+import pandas as pd
 
-INPUT_FILE = '/opt/airflow/data/grammy.csv'
-TEMP_FILE = '/opt/airflow/output/grammy_cleaned.csv'
+# Añadir el path del directorio BD_connection al sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'BD_connection')))
 
-def extract_grammy_data():
-    print("🔍 Leyendo archivo de Grammys...")
-    df = pd.read_csv(INPUT_FILE)
+from BD_connection import get_mysql_connection
 
-    # Renombrar columna para mayor claridad
-    df.rename(columns={'winner': 'is_nominated'}, inplace=True)
-
-    # Normalizar texto
-    df['title'] = df['title'].str.lower().str.strip()
-    df['artist'] = df['artist'].str.lower().str.strip()
-    df['category'] = df['category'].str.strip()
-
-    # Filtrar columnas relevantes
-    columns_to_keep = [
-        'year', 'title', 'category', 'nominee', 'artist', 'is_nominated'
-    ]
-    df = df[columns_to_keep]
-
-    # Limpieza básica
-    df.dropna(subset=['title', 'artist'], inplace=True)
-
-    # Guardar para siguientes tareas
-    os.makedirs('/opt/airflow/output', exist_ok=True)
-    df.to_csv(TEMP_FILE, index=False)
-
-    print(f"✅ Datos de Grammy procesados y guardados en {TEMP_FILE}")
+def extract_grammy(query="SELECT * FROM grammy_awards"):
+    """
+    Extrae datos de la base de datos de los Grammy usando BD_connections.py.
+    """
+    try:
+        connection = get_mysql_connection()
+        df = pd.read_sql(query, con=connection)
+        print(f"✅ Datos de Grammy extraídos correctamente. Filas: {len(df)}")
+        return df
+    except Exception as e:
+        print(f"❌ Error al extraer datos de Grammy: {e}")
+        return pd.DataFrame()
+    finally:
+        if 'connection' in locals() and connection.is_connected():
+            connection.close()

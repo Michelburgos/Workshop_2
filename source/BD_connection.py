@@ -25,10 +25,3 @@ def get_sqlalchemy_engine():
         return None
 
 # ... (tu código anterior)
-
-if __name__ == "__main__":
-    engine = get_sqlalchemy_engine()
-    if engine:
-        print("¡Conexión establecida correctamente!")
-    else:
-        print("No se pudo conectar a la base de datos.")
