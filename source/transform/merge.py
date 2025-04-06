@@ -1,33 +1,36 @@
 import pandas as pd
+from transform_spotify import transform_spotify_data
+from transform_grammys import transform_grammy_data
+from transform_api import transform_api_data
+import logging
 
-SPOTIFY_PATH = '/opt/airflow/intermediate/spotify_clean.csv'
-GRAMMY_PATH = '/opt/airflow/intermediate/grammy_clean.csv'
-API_PATH = '/opt/airflow/intermediate/musicbrainz_clean.csv'
-FINAL_PATH = '/opt/airflow/output/final_dataset.csv'
+def merge_datasets():
+    """
+    Une los datasets transformados de Spotify, Grammy y Artistas API.
 
-def transform_merge():
-    print("🔀 Haciendo merge entre las 3 fuentes...")
+    Returns:
+        pd.DataFrame: DataFrame combinado y listo para análisis.
+    """
+    try:
+        # Extraer y transformar cada dataset
+        df_spotify = transform_spotify_data()   # Devuelve un DataFrame limpio de Spotify
+        df_grammy = transform_grammy_data()     # Devuelve un DataFrame limpio de Grammy
+        df_artists = transform_api_data()   # Devuelve un DataFrame limpio de la API
 
-    spotify = pd.read_csv(SPOTIFY_PATH)
-    grammy = pd.read_csv(GRAMMY_PATH)
-    api = pd.read_csv(API_PATH)
+        # === MERGE entre Grammy y Artistas API por el campo 'artist' ===
+        df_merged = pd.merge(df_grammy, df_artists, how='left', on='artist')
 
-    # Merge 1: Spotify + Grammy (por track y artista)
-    merged1 = pd.merge(
-        spotify,
-        grammy,
-        left_on=['track_name', 'artists'],
-        right_on=['title', 'artist'],
-        how='left'
-    )
+        # === MERGE con Spotify ===
+        # Asumimos que hay campos comunes como 'track_name' y 'artists'
 
-    # Merge 2: Agregar info externa de MusicBrainz (puede tener fecha lanzamiento, tags, etc.)
-    merged_final = pd.merge(
-        merged1,
-        api,
-        on=['track_name', 'artists'],
-        how='left'
-    )
+        df_final = pd.merge(df_merged, df_spotify, how='left', left_on='artists', right_on='artist')
+        # Opcional: eliminar columnas redundantes
+        df_final = df_final.drop(columns=['track_name', 'artists'], errors='ignore')
 
-    merged_final.to_csv(FINAL_PATH, index=False)
-    print("✅ Dataset final generado y guardado.")
+        logging.info(f"✅ Merge completado. Shape final: {df_final.shape}")
+        return df_final
+
+    except Exception as e:
+        logging.error(f"❌ Error al hacer el merge de datasets: {e}")
+        raise
+

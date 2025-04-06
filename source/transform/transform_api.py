@@ -1,6 +1,5 @@
 import pandas as pd
 
-
 def imputar_nulos_api(df: pd.DataFrame) -> pd.DataFrame:
     df['country'] = df['country'].fillna('Unknown')
     df['begin_date'] = df['begin_date'].fillna('Unknown')
