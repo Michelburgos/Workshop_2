@@ -10,28 +10,80 @@ def eliminar_nulos(df: pd.DataFrame) -> pd.DataFrame:
 def eliminar_duplicados_exactos(df: pd.DataFrame) -> pd.DataFrame:
     return df.drop_duplicates()
 
-def consolidar_por_track_id(df: pd.DataFrame) -> pd.DataFrame:
-    return df.groupby('track_id').agg({
-        'track_name': 'first',
-        'artists': 'first',
-        'album_name': 'first',
-        'popularity': 'mean',
-        'duration_ms': 'first',
-        'explicit': 'first',
-        'danceability': 'first',
-        'energy': 'first',
-        'key': 'first',
-        'loudness': 'first',
-        'mode': 'first',
-        'speechiness': 'first',
-        'acousticness': 'first',
-        'instrumentalness': 'first',
-        'liveness': 'first',
-        'valence': 'first',
-        'tempo': 'first',
-        'time_signature': 'first',
-        'track_genre': lambda x: ', '.join(sorted(set(x)))
-    }).reset_index()
+def asignar_categoria_y_consolidar_duplicados(df: pd.DataFrame, key_columns: list = ['artists', 'track_id']) -> pd.DataFrame:
+    """
+    Asigna una categoría general a cada género musical y consolida duplicados manteniendo
+    la fila con el género más frecuente por combinación de artistas y track_id.
+
+    Args:
+        df (pd.DataFrame): DataFrame original que contiene al menos la columna 'track_genre'.
+        key_columns (list): Columnas clave para identificar duplicados (default: ['artists', 'track_id']).
+
+    Returns:
+        pd.DataFrame: DataFrame procesado con categoría asignada y duplicados consolidados.
+    """
+    # Diccionario de mapeo de géneros
+    genre_categories = {
+        'rock': 'Rock', 'rockabilly': 'Rock', 'alt-rock': 'Rock', 'alternative': 'Rock', 'emo': 'Rock', 
+        'goth': 'Rock', 'grunge': 'Rock', 'hard-rock': 'Rock', 'psych-rock': 'Rock', 'punk-rock': 'Rock', 
+        'rock-n-roll': 'Rock',
+        'pop': 'Pop', 'power-pop': 'Pop', 'j-pop': 'Pop', 'k-pop': 'Pop', 'synth-pop': 'Pop', 
+        'indie-pop': 'Pop', 'cantopop': 'Pop', 'mandopop': 'Pop',
+        'electronic': 'Electronic', 'edm': 'Electronic', 'techno': 'Electronic', 'house': 'Electronic', 
+        'trance': 'Electronic', 'idm': 'Electronic', 'hardstyle': 'Electronic', 'progressive-house': 'Electronic', 
+        'minimal-techno': 'Electronic', 'electro': 'Electronic', 'breakbeat': 'Electronic', 'drum-and-bass': 'Electronic', 
+        'dubstep': 'Electronic', 'chicago-house': 'Electronic', 'deep-house': 'Electronic', 'detroit-techno': 'Electronic', 
+        'industrial': 'Electronic', 'trip-hop': 'Electronic',
+        'classical': 'Classical', 'opera': 'Classical', 'new-age': 'Classical', 'piano': 'Classical', 
+        'ambient': 'Classical',
+        'folk': 'Folk', 'acoustic': 'Folk', 'bluegrass': 'Folk', 'country': 'Folk', 'honky-tonk': 'Folk', 
+        'guitar': 'Folk', 'singer-songwriter': 'Folk', 'songwriter': 'Folk',
+        'jazz': 'Jazz/Blues', 'blues': 'Jazz/Blues', 'soul': 'Jazz/Blues', 'funk': 'Jazz/Blues', 'groove': 'Jazz/Blues', 
+        'r-n-b': 'Jazz/Blues',
+        'latin': 'Latin', 'latino': 'Latin', 'salsa': 'Latin', 'samba': 'Latin', 'sertanejo': 'Latin', 
+        'pagode': 'Latin', 'tango': 'Latin', 'forro': 'Latin', 'mpb': 'Latin', 'reggaeton': 'Latin',
+        'hip-hop': 'Hip-Hop', 'afrobeat': 'Hip-Hop', 'dancehall': 'Hip-Hop',
+        'metal': 'Metal', 'heavy-metal': 'Metal', 'death-metal': 'Metal', 'black-metal': 'Metal', 
+        'metalcore': 'Metal', 'grindcore': 'Metal',
+        'punk': 'Punk', 'ska': 'Punk', 'hardcore': 'Punk',
+        'reggae': 'Reggae', 'dub': 'Reggae',
+        'happy': 'Moods', 'sleep': 'Moods', 'chill': 'Moods', 'sad': 'Moods', 'study': 'Moods', 
+        'romance': 'Moods', 'party': 'Moods',
+        'french': 'Regional', 'german': 'Regional', 'british': 'Regional', 'turkish': 'Regional', 
+        'iranian': 'Regional', 'spanish': 'Regional', 'swedish': 'Regional', 'indian': 'Regional', 
+        'malay': 'Regional', 'brazil': 'Regional',
+        'kids': 'Other', 'anime': 'Other', 'comedy': 'Other', 'disney': 'Other', 'show-tunes': 'Other', 
+        'club': 'Other', 'gospel': 'Other', 'world-music': 'Other', 'children': 'Other', 'pop-film': 'Other', 
+        'j-idol': 'Pop', 'j-dance': 'Electronic'
+    }
+
+    def get_category(genre: str) -> str:
+        if not genre or pd.isna(genre):
+            return 'Unknown'
+        genre = genre.lower()
+        for key, category in genre_categories.items():
+            if key in genre:
+                return category
+        return 'Other'
+
+    def pick_genre(group: pd.DataFrame) -> pd.Series:
+        if len(group) == 1:
+            return group.iloc[0]
+        most_common = group['track_genre'].mode()
+        if not most_common.empty:
+            return group[group['track_genre'] == most_common[0]].iloc[0]
+        return group.iloc[0]
+
+    
+        # Asignar categoría general al género
+    df['track_genre'] = df['track_genre'].apply(get_category)
+
+        # Consolidar duplicados por key_columns
+    df = df.groupby(key_columns, as_index=False).apply(pick_genre).reset_index(drop=True)
+
+    return df
+
+
 
 def eliminar_duplicados_por_contenido(df: pd.DataFrame) -> pd.DataFrame:
     subset_cols = [col for col in df.columns if col not in ["track_id", "album_name"]]
@@ -95,7 +147,7 @@ def transform_spotify_data() -> pd.DataFrame:
     df = eliminar_columnas_innecesarias(df)
     df = eliminar_nulos(df)
     df = eliminar_duplicados_exactos(df)
-    df = consolidar_por_track_id(df)
+    df = asignar_categoria_y_consolidar_duplicados(df)
     df = eliminar_duplicados_por_contenido(df)
     df = conservar_mas_popular_por_nombre_artista(df)
     df = categorizar_popularity(df)
