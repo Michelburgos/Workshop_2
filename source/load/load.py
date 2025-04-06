@@ -1,28 +1,22 @@
-import pandas as pd
-import psycopg2
-from sqlalchemy import create_engine
+import logging
+from transform.merge import merge_datasets
+from BD_connection import get_sqlalchemy_engine
 
-FINAL_DATASET = '/opt/airflow/output/final_dataset.csv'
+def save_merged_to_db():
+    """
+    Carga el DataFrame final del merge y lo guarda en la base de datos.
+    """
+    try:
+        df_final = merge_datasets()
+        engine = get_sqlalchemy_engine()
+        df_final.to_sql("cleaned_merged_data", engine, if_exists="replace", index=False)
+        logging.info("✅ Datos guardados exitosamente en la base de datos.")
+        print("✅ Datos guardados exitosamente en la base de datos.")
 
-# Configuración de la conexión (ajústala según tu entorno)
-DB_HOST = 'postgres'
-DB_PORT = '5432'
-DB_NAME = 'etl_project'
-DB_USER = 'airflow'
-DB_PASSWORD = 'airflow'
+    except Exception as e:
+        logging.error(f"❌ Error al guardar en la base de datos: {e}")
+        raise
 
-TABLE_NAME = 'spotify_grammy_musicbrainz'
+if __name__ == "__main__":
+    save_merged_to_db()
 
-def load_to_postgres():
-    print("📥 Cargando datos a la base de datos...")
-
-    # Cargar el dataset final
-    df = pd.read_csv(FINAL_DATASET)
-
-    # Crear engine de conexión
-    engine = create_engine(f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}')
-
-    # Cargar en la tabla (reemplaza si ya existe)
-    df.to_sql(TABLE_NAME, engine, if_exists='replace', index=False)
-
-    print(f"✅ Datos cargados correctamente en la tabla '{TABLE_NAME}'")
