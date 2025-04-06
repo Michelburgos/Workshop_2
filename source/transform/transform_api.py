@@ -1,19 +1,22 @@
 import pandas as pd
 
-INPUT_PATH = '/opt/airflow/intermediate/musicbrainz_raw.csv'
-OUTPUT_PATH = '/opt/airflow/intermediate/musicbrainz_clean.csv'
 
-def transform_api_data():
-    print("🔄 Transformando datos de MusicBrainz...")
+def imputar_nulos_api(df: pd.DataFrame) -> pd.DataFrame:
+    df['country'] = df['country'].fillna('Unknown')
+    df['begin_date'] = df['begin_date'].fillna('Unknown')
+    df['end_date'] = df['end_date'].fillna('Active')
+    df['type'] = df['type'].fillna('Unknown')
+    df['gender'] = df.apply(lambda row: 'N/A' if row['type'] == 'Group' else row['gender'], axis=1)
+    df['gender'] = df['gender'].fillna('Unknown')
+    return df
 
-    df = pd.read_csv(INPUT_PATH)
+def eliminar_columnas_innecesarias_api(df: pd.DataFrame) -> pd.DataFrame:
+    return df.drop(columns=['artist_id', 'disambiguation'], errors='ignore')
 
-    # Normalización de nombre
-    df['track_name'] = df['track_name'].str.lower().str.strip()
-    df['artist'] = df['artist'].str.lower().str.strip()
+def transform_api_data() -> pd.DataFrame:
 
-    # Eliminar duplicados
-    df = df.drop_duplicates(subset=['track_name', 'artist'])
+    df = imputar_nulos_api(df)
+    df = eliminar_columnas_innecesarias_api(df)
 
-    df.to_csv(OUTPUT_PATH, index=False)
-    print("✅ Datos de MusicBrainz transformados y guardados.")
+    return df
+
