@@ -1,6 +1,6 @@
 import logging
 import pandas as pd
-from BD_connection import get_connection  
+from source.BD_connection import get_connection
 
 # =============================
 # 🔧 Configurar logging

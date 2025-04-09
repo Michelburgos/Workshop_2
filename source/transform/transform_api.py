@@ -38,8 +38,6 @@ def transform_wikidata(df: pd.DataFrame) -> pd.DataFrame:
     df['birth'] = df['birth'].fillna('Unknown')
     df['death'] = df['death'].notna().map({False: 'alive', True: 'deceased'})
 
-    # 2. Eliminar la columna 'genre' si existe
-    df = df.drop(columns=['genre'], errors='ignore')
 
     # 3. Eliminar nulos y duplicados exactos
     df = df.dropna()

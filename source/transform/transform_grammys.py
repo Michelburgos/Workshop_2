@@ -1,16 +1,11 @@
 import pandas as pd
 import re
 import logging
-from BD_connection import get_sqlalchemy_engine
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-
 def impute_artist(nominee: str, category: str) -> str | None:
-    """
-    Intenta imputar el nombre del artista a partir del nominado, dependiendo de la categoría.
-    """
     if pd.isna(nominee):
         return None
 
@@ -33,9 +28,6 @@ def impute_artist(nominee: str, category: str) -> str | None:
 
 
 def extract_artist_from_parentheses(workers: str) -> str | None:
-    """
-    Extrae texto entre paréntesis del campo 'workers', si existe.
-    """
     if pd.isna(workers):
         return None
     match = re.search(r'\(([^)]+)\)$', workers)
@@ -43,9 +35,6 @@ def extract_artist_from_parentheses(workers: str) -> str | None:
 
 
 def extraer_artista(worker: str) -> str | None:
-    """
-    Extrae nombre de artista usando patrones conocidos desde el campo 'workers'.
-    """
     if pd.isnull(worker):
         return None
 
@@ -60,19 +49,14 @@ def extraer_artista(worker: str) -> str | None:
     return worker.strip()
 
 
-def transform_grammy_data() -> pd.DataFrame:
+def transform_grammy_data(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Ejecuta todo el proceso de transformación del dataset de premios Grammy.
+    Transforma el DataFrame del dataset Grammy.
     """
-    logging.info("📥 Extrayendo datos desde base de datos...")
-    engine = get_sqlalchemy_engine()
-    df = pd.read_sql_query("SELECT * FROM raw_grammy", engine)
-    logging.info(f"✅ Datos cargados. Filas: {len(df)}")
+    logging.info(f"📊 Iniciando transformación de datos. Filas recibidas: {len(df)}")
 
-    # Eliminar filas con 'nominee' nulo
     df = df.dropna(subset=["nominee"])
 
-    # Filtrar categorías problemáticas
     problematic_categories = [
         'Best Small Ensemble Performance (With Or Without Conductor)',
         'Most Promising New Classical Recording Artist',
@@ -86,20 +70,16 @@ def transform_grammy_data() -> pd.DataFrame:
     mask_null = df['artist'].isna() & df['workers'].isna()
     df = df[~(mask_null & df['category'].isin(problematic_categories))]
 
-    # Imputación desde 'nominee'
     logging.info("🔍 Imputando artistas desde 'nominee'...")
     subset = df[df['artist'].isna() & df['workers'].isna()].copy()
     subset['artist'] = subset.apply(lambda row: impute_artist(row['nominee'], row['category']), axis=1)
     df.loc[subset.index, 'artist'] = subset['artist']
 
-    # Imputación desde paréntesis
     mask = df['artist'].isna() & df['workers'].notna()
     df.loc[mask, 'artist'] = df.loc[mask, 'workers'].apply(extract_artist_from_parentheses)
 
-    # Imputación final desde patrones en 'workers'
     df['artist'] = df['artist'].fillna(df['workers'].apply(extraer_artista))
 
-    # Reemplazos y limpieza
     df["artist"] = df["artist"].replace({"(Various Artists)": "Various Artists"})
     df = df.drop(columns=['published_at', 'updated_at', 'img'], errors="ignore")
     df.rename(columns={'winner': 'is_nominated'}, inplace=True)
