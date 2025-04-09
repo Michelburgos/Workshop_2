@@ -1,22 +1,34 @@
 import logging
-from transform.merge import merge_datasets
-from BD_connection import get_sqlalchemy_engine
+import pandas as pd
+from BD_connection import get_connection  
 
-def save_merged_to_db():
+# =============================
+# 🔧 Configurar logging
+# =============================
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+# =============================
+# ⬆️ Subir el DataFrame
+# =============================
+def upload_dataframe(df: pd.DataFrame, table_name: str, if_exists: str = "replace"):
     """
-    Carga el DataFrame final del merge y lo guarda en la base de datos.
+    Sube un DataFrame a una tabla de PostgreSQL usando la conexión de BD_connection.py
+
+    Args:
+        df (pd.DataFrame): El DataFrame a subir.
+        table_name (str): Nombre de la tabla destino.
+        if_exists (str): 'replace', 'append' o 'fail' (default: 'replace')
     """
+    engine = get_connection("merge")
+
     try:
-        df_final = merge_datasets()
-        engine = get_sqlalchemy_engine()
-        df_final.to_sql("cleaned_merged_data", engine, if_exists="replace", index=False)
-        logging.info("✅ Datos guardados exitosamente en la base de datos.")
-        print("✅ Datos guardados exitosamente en la base de datos.")
-
+        logging.info(f"⬆️ Subiendo datos a la tabla '{table_name}'...")
+        df.to_sql(table_name, con=engine, index=False, if_exists=if_exists)
+        logging.info(f"✅ Datos subidos exitosamente a '{table_name}'. Total filas: {len(df)}")
     except Exception as e:
-        logging.error(f"❌ Error al guardar en la base de datos: {e}")
+        logging.error(f"❌ Error al subir el DataFrame: {e}")
         raise
-
-if __name__ == "__main__":
-    save_merged_to_db()
 

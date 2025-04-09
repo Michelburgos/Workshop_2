@@ -1,47 +1,66 @@
+import os
 import logging
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
-from transform.merge import merge_datasets
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+import pickle
 
-def upload_csv_to_drive(file_path: str, folder_id: str = None):
+# Logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+# Scopes
+SCOPES = ['https://www.googleapis.com/auth/drive.file']
+
+def authenticate_drive():
     """
-    Sube un archivo CSV a Google Drive.
+    Autentica el usuario para acceder a Google Drive.
+    """
+    creds = None
+    token_path = 'token.pickle'
+
+    if os.path.exists(token_path):
+        with open(token_path, 'rb') as token:
+            creds = pickle.load(token)
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+
+        with open(token_path, 'wb') as token:
+            pickle.dump(creds, token)
+
+    return build('drive', 'v3', credentials=creds)
+
+def upload_file_to_drive(filepath: str, filename: str = None, folder_id: str = None):
+    """
+    Sube un archivo a Google Drive.
 
     Args:
-        file_path (str): Ruta del archivo CSV a subir.
-        folder_id (str, opcional): ID de la carpeta de destino en Google Drive.
+        filepath (str): Ruta local del archivo a subir.
+        filename (str): Nombre con el que se subirá (si es diferente al nombre local).
+        folder_id (str): ID de la carpeta de destino en Drive (opcional).
     """
+    service = authenticate_drive()
+
+    file_metadata = {'name': filename or os.path.basename(filepath)}
+    if folder_id:
+        file_metadata['parents'] = [folder_id]
+
+    media = MediaFileUpload(filepath, resumable=True)
+
     try:
-        gauth = GoogleAuth()
-        gauth.LocalWebserverAuth()
-        drive = GoogleDrive(gauth)
-
-        file_drive = drive.CreateFile({
-            'title': file_path.split('/')[-1],
-            'parents': [{'id': folder_id}] if folder_id else []
-        })
-        file_drive.SetContentFile(file_path)
-        file_drive.Upload()
-
-        print(f"✅ Archivo subido exitosamente a Google Drive: {file_drive['title']}")
-        print(f"🔗 Link del archivo: https://drive.google.com/file/d/{file_drive['id']}")
-
+        file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id'
+        ).execute()
+        logging.info(f"✅ Archivo subido exitosamente a Drive con ID: {file.get('id')}")
     except Exception as e:
-        logging.error(f"❌ Error al subir archivo a Drive: {e}")
-        raise
+        logging.error(f"❌ Error al subir archivo a Google Drive: {e}")
 
-def save_and_upload_to_drive():
-    """
-    Ejecuta el proceso completo: merge + guardar CSV + subir a Drive.
-    """
-    df_final = merge_datasets()
-    output_path = "merged_data_final.csv"
-    df_final.to_csv(output_path, index=False)
-
-    # Si tienes una carpeta específica en Drive, reemplaza aquí
-    folder_id = None  # Ej: "1AbcD2EfGh3Ij4KlMnoPQrStUvWxYz"
-    upload_csv_to_drive(output_path, folder_id)
-
-if __name__ == "__main__":
-    save_and_upload_to_drive()
 

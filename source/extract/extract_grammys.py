@@ -3,9 +3,9 @@ import sys
 import logging
 import pandas as pd
 
-# Agrega el path al directorio BD_connection
+# Añadir el path al directorio BD_connection
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'BD_connection')))
-from BD_connection import get_mysql_connection
+from BD_connection import get_sqlalchemy_engine
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO,
@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO,
 
 def extract_grammy(query="SELECT * FROM raw_grammy"):
     """
-    Ejecuta una consulta SQL sobre la base de datos de los Grammy.
+    Ejecuta una consulta SQL sobre la base de datos PostgreSQL de Grammy.
 
     Args:
         query (str): Consulta SQL a ejecutar. Por defecto: "SELECT * FROM raw_grammy".
@@ -24,13 +24,13 @@ def extract_grammy(query="SELECT * FROM raw_grammy"):
     Raises:
         Exception: Si ocurre un error durante la conexión o extracción.
     """
-    connection = None
+    engine = None
     try:
-        logging.info("Estableciendo conexión con la base de datos de Grammy...")
-        connection = get_mysql_connection()
+        logging.info("Estableciendo conexión con la base de datos PostgreSQL...")
+        engine = get_sqlalchemy_engine()
 
-        df = pd.read_sql(query, con=connection)
-        logging.info(f"✅ {len(df)} registros extraídos de la base de datos de Grammy.")
+        df = pd.read_sql(query, con=engine)
+        logging.info(f"✅ {len(df)} registros extraídos de la tabla 'raw_grammy'.")
         return df
 
     except Exception as e:
@@ -38,6 +38,7 @@ def extract_grammy(query="SELECT * FROM raw_grammy"):
         raise
 
     finally:
-        if connection and connection.is_connected():
-            connection.close()
-            logging.info("🔒 Conexión a la base de datos cerrada correctamente.")
+        if engine:
+            engine.dispose()
+            logging.info("🔒 Conexión a PostgreSQL cerrada correctamente.")
+
