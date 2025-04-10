@@ -43,11 +43,15 @@ dag = DAG(
 )
 
 # === Rutas temporales ===
-TEMP_DIR = tempfile.gettempdir()
-SPOTIFY_PATH = os.path.join(TEMP_DIR, 'spotify.csv')
-GRAMMY_PATH = os.path.join(TEMP_DIR, 'grammy.csv')
-API_PATH = os.path.join(TEMP_DIR, 'wikidata.csv')
-MERGED_PATH = os.path.join(TEMP_DIR, 'merged.csv')
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+DATA_TEMP_DIR = os.path.join(BASE_DIR, 'data_temp')
+os.makedirs(DATA_TEMP_DIR, exist_ok=True)
+
+SPOTIFY_PATH = os.path.join(DATA_TEMP_DIR, 'spotify.csv')
+GRAMMY_PATH = os.path.join(DATA_TEMP_DIR, 'grammy.csv')
+API_PATH = os.path.join(DATA_TEMP_DIR, 'wikidata.csv')
+MERGED_PATH = os.path.join(DATA_TEMP_DIR, 'merged.csv')
+
 
 
 # ========== TAREAS ==========
@@ -55,8 +59,11 @@ MERGED_PATH = os.path.join(TEMP_DIR, 'merged.csv')
 # 🔽 Extracción
 def task_extract_spotify():
     df = extract_spotify()
+    if df.empty:
+        raise ValueError("❌ El DataFrame de Spotify está vacío, no se puede continuar.")
     df.to_csv(SPOTIFY_PATH, index=False)
     logging.info(f"✅ Spotify extraído en: {SPOTIFY_PATH}")
+
 
 def task_extract_grammy():
     df = extract_grammy()
@@ -76,7 +83,8 @@ def task_transform_spotify():
     logging.info(f"✅ Spotify transformado y sobrescrito: {SPOTIFY_PATH}")
 
 def task_transform_grammy():
-    df = transform_grammy_data()
+    df = pd.read_csv(GRAMMY_PATH)
+    df = transform_grammy_data(df)
     df.to_csv(GRAMMY_PATH, index=False)
     logging.info(f"✅ Grammy transformado y sobrescrito: {GRAMMY_PATH}")
 

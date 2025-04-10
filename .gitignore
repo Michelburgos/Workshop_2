@@ -3,3 +3,5 @@
 #Carpetas
 venv/
 credentials.json
+token.pickle
+dag/data_temp

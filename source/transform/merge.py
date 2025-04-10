@@ -66,6 +66,8 @@ def merge_datasets(df_spotify: pd.DataFrame, df_grammy: pd.DataFrame, df_wikidat
 
     # 🔹 Final
     final_merged = final_merged.drop_duplicates(subset=['track_id', 'artist'], keep='first').reset_index(drop=True)
+
+    final_merged = final_merged.dropna()
     logging.info(f"✅ Merge completo: {len(final_merged)} filas")
 
     return final_merged
