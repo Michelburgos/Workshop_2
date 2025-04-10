@@ -35,7 +35,6 @@ def transform_wikidata(df: pd.DataFrame) -> pd.DataFrame:
 
     # 1. Limpieza básica
     df['country'] = df['country'].fillna('Unknown')
-    df['birth'] = df['birth'].fillna('Unknown')
     df['death'] = df['death'].notna().map({False: 'alive', True: 'deceased'})
 
 
@@ -52,8 +51,6 @@ def transform_wikidata(df: pd.DataFrame) -> pd.DataFrame:
 
     agrupado = df.groupby("artist").agg({
         "country": valor_mas_comun,
-        "type": valor_mas_comun,
-        "birth": valor_mas_comun,
         "death": valor_mas_comun,
         "gender": valor_mas_comun,
         "award": lambda x: sorted(set(x))
