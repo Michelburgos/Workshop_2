@@ -2,10 +2,19 @@ import pandas as pd
 import re
 import logging
 
-# Configurar logging
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def impute_artist(nominee: str, category: str) -> str | None:
+    """Imputa el nombre del artista desde el campo nominee según la categoría.
+
+    Args:
+        nominee (str): Nombre del nominado, puede incluir información adicional.
+        category (str): Categoría de la nominación.
+
+    Returns:
+        str | None: Nombre del artista extraído o None si no se puede determinar.
+    """
     if pd.isna(nominee):
         return None
 
@@ -28,6 +37,14 @@ def impute_artist(nominee: str, category: str) -> str | None:
 
 
 def extract_artist_from_parentheses(workers: str) -> str | None:
+    """Extrae el nombre del artista desde un texto entre paréntesis.
+
+    Args:
+        workers (str): Cadena que puede contener nombres de artistas u otros colaboradores.
+
+    Returns:
+        str | None: Nombre del artista encontrado entre paréntesis o None si no hay coincidencia.
+    """
     if pd.isna(workers):
         return None
     match = re.search(r'\(([^)]+)\)$', workers)
@@ -35,6 +52,14 @@ def extract_artist_from_parentheses(workers: str) -> str | None:
 
 
 def extraer_artista(worker: str) -> str | None:
+    """Extrae el nombre del artista desde una cadena de colaboradores.
+
+    Args:
+        worker (str): Cadena que describe a los colaboradores, como artistas, solistas, o compositores.
+
+    Returns:
+        str | None: Nombre del artista extraído o None si la entrada es nula.
+    """
     if pd.isnull(worker):
         return None
 
@@ -50,10 +75,15 @@ def extraer_artista(worker: str) -> str | None:
 
 
 def transform_grammy_data(df: pd.DataFrame) -> pd.DataFrame:
+    """Transforma el DataFrame del dataset Grammy.
+
+    Args:
+        df (pd.DataFrame): DataFrame crudo con datos de nominaciones Grammy.
+
+    Returns:
+        pd.DataFrame: DataFrame transformado con artistas imputados y columnas ajustadas.
     """
-    Transforma el DataFrame del dataset Grammy.
-    """
-    logging.info(f"📊 Iniciando transformación de datos. Filas recibidas: {len(df)}")
+    logging.info(f"Iniciando transformación de datos. Filas recibidas: {len(df)}")
 
     df = df.dropna(subset=["nominee"])
 
@@ -70,7 +100,7 @@ def transform_grammy_data(df: pd.DataFrame) -> pd.DataFrame:
     mask_null = df['artist'].isna() & df['workers'].isna()
     df = df[~(mask_null & df['category'].isin(problematic_categories))]
 
-    logging.info("🔍 Imputando artistas desde 'nominee'...")
+    logging.info("Imputando artistas desde 'nominee'...")
     subset = df[df['artist'].isna() & df['workers'].isna()].copy()
     subset['artist'] = subset.apply(lambda row: impute_artist(row['nominee'], row['category']), axis=1)
     df.loc[subset.index, 'artist'] = subset['artist']
@@ -84,5 +114,5 @@ def transform_grammy_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop(columns=['published_at', 'updated_at', 'img'], errors="ignore")
     df.rename(columns={'winner': 'is_nominated'}, inplace=True)
 
-    logging.info(f"🎼 Transformación completada. Total filas finales: {len(df)}")
+    logging.info(f"Transformación completada. Total filas finales: {len(df)}")
     return df

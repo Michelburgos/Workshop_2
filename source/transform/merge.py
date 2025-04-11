@@ -2,14 +2,20 @@ import pandas as pd
 import logging
 import re
 
-# Configurar logging
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def expand_artists_column(df: pd.DataFrame, column: str = "artist") -> pd.DataFrame:
+    """Expande filas con múltiples artistas en la columna especificada, separando por símbolos comunes.
+
+    Args:
+        df (pd.DataFrame): DataFrame de entrada con una columna que contiene nombres de artistas.
+        column (str, optional): Nombre de la columna a expandir. Por defecto, "artist".
+
+    Returns:
+        pd.DataFrame: DataFrame con la columna expandida, donde cada artista ocupa una fila y está en minúsculas.
     """
-    Expande filas con múltiples artistas en la columna especificada, separando por símbolos comunes.
-    """
-    logging.info(f"🔄 Expandiendo artistas en columna '{column}'...")
+    logging.info(f"Expandiendo artistas en columna '{column}'...")
 
     separators = r';|,|&| Featuring | feat\.| Feat\.| ft\.|/| x '
     df = df.copy()
@@ -23,29 +29,36 @@ def expand_artists_column(df: pd.DataFrame, column: str = "artist") -> pd.DataFr
     return df_expanded
 
 def merge_datasets(df_spotify: pd.DataFrame, df_grammy: pd.DataFrame, df_wikidata: pd.DataFrame) -> pd.DataFrame:
+    """Realiza el merge de los datasets de Spotify, Grammy y Wikidata considerando colaboraciones.
+
+    Args:
+        df_spotify (pd.DataFrame): DataFrame con datos de Spotify.
+        df_grammy (pd.DataFrame): DataFrame con datos de Grammy.
+        df_wikidata (pd.DataFrame): DataFrame con datos de Wikidata.
+
+    Returns:
+        pd.DataFrame: DataFrame combinado con información de los tres datasets, sin duplicados por track_id y artista.
     """
-    Realiza el merge de los datasets de Spotify, Grammy y Wikidata considerando colaboraciones.
-    """
-    logging.info("🚀 Iniciando merge entre Spotify, Grammy y Wikidata...")
+    logging.info("Iniciando merge entre Spotify, Grammy y Wikidata...")
 
     df_spotify_exp = expand_artists_column(df_spotify, "artists").rename(columns={"artists": "artist"})
     df_grammy_exp = expand_artists_column(df_grammy, "artist")
 
     df_wikidata['artist'] = df_wikidata['artist'].str.strip().str.lower()
 
-    logging.info("🔗 Merge Spotify + Grammy...")
+    logging.info("Merge Spotify + Grammy...")
     merged_spotify_grammy = pd.merge(df_spotify_exp, df_grammy_exp, on='artist', how='left', suffixes=('', '_grammy'))
 
-    logging.info("🔗 Merge con Wikidata...")
+    logging.info("Merge con Wikidata...")
     final_merged = pd.merge(merged_spotify_grammy, df_wikidata, on='artist', how='left', suffixes=('', '_wikidata'))
 
-    # Reemplazar valores faltantes de won_grammy por "No"
+
     if "won_grammy" in final_merged.columns:
         final_merged["won_grammy"] = final_merged["won_grammy"].fillna("No")
 
     final_merged = final_merged.drop_duplicates(subset=['track_id', 'artist'], keep='first').reset_index(drop=True)
 
-    logging.info(f"✅ Merge completo: {len(final_merged)} filas")
+    logging.info(f"Merge completo: {len(final_merged)} filas")
     return final_merged
 
 
