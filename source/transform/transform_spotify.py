@@ -127,6 +127,7 @@ def categorizar_valence(df: pd.DataFrame) -> pd.DataFrame:
         elif v < 0.8: return 'happy'
         return 'very happy'
     df['valence_cat'] = df['valence'].apply(categorize)
+    df = df[~df["track_genre"].str.lower().isin(["other", "moods"])].reset_index(drop=True)
     return df
 
 
@@ -142,9 +143,8 @@ def eliminar_columnas_numericas(df: pd.DataFrame) -> pd.DataFrame:
     """Elimina columnas numéricas utilizadas para categorización."""
     logging.info("Eliminando columnas numéricas originales...")
     columnas = [
-        'popularity', 'duration_ms', 'danceability', 'energy', 'valence',
-        'loudness', 'liveness', 'key', 'mode', 'time_signature', 'tempo',
-        'speechiness', 'acousticness', 'instrumentalness'
+        'valence','loudness', 'liveness', 'key', 'mode', 'time_signature', 'tempo',
+        'speechiness', 'acousticness', 'instrumentalness', 'album_name'
     ]
     return df.drop(columns=columnas, errors='ignore')
 

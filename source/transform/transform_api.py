@@ -59,7 +59,7 @@ def transform_wikidata(df: pd.DataFrame) -> pd.DataFrame:
     # 6. Columnas extra
     agrupado["award_count"] = agrupado["award"].apply(len)
     agrupado["won_grammy"] = agrupado["award"].apply(
-        lambda premios: any("grammy" in premio.lower() for premio in premios)
+        lambda premios: "Yes" if any("grammy" in premio.lower() for premio in premios) else "No"
     )
     agrupado["award"] = agrupado["award"].apply(lambda x: "; ".join(x))
 
