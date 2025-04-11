@@ -1,7 +1,7 @@
 import pandas as pd
 import logging
 import re
-
+from rapidfuzz import process, fuzz
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -47,11 +47,40 @@ def merge_datasets(df_spotify: pd.DataFrame, df_grammy: pd.DataFrame, df_wikidat
     df_wikidata['artist'] = df_wikidata['artist'].str.strip().str.lower()
 
     logging.info("Merge Spotify + Grammy...")
-    merged_spotify_grammy = pd.merge(df_spotify_exp, df_grammy_exp, on='artist', how='left', suffixes=('', '_grammy'))
+    # Usar rapidfuzz para hacer fuzzy matching en el merge
+    merged_spotify_grammy = df_spotify_exp.copy()
+    merged_spotify_grammy['matched_artist'] = merged_spotify_grammy['artist'].apply(
+        lambda x: process.extractOne(x, df_grammy_exp['artist'], scorer=fuzz.WRatio, score_cutoff=90)
+    )
+    merged_spotify_grammy['matched_artist_name'] = merged_spotify_grammy['matched_artist'].apply(
+        lambda x: x[0] if x else None
+    )
+    merged_spotify_grammy = pd.merge(
+        merged_spotify_grammy,
+        df_grammy_exp,
+        left_on='matched_artist_name',
+        right_on='artist',
+        how='left',
+        suffixes=('', '_grammy')
+    ).drop(columns=['matched_artist', 'matched_artist_name'])
 
     logging.info("Merge con Wikidata...")
-    final_merged = pd.merge(merged_spotify_grammy, df_wikidata, on='artist', how='left', suffixes=('', '_wikidata'))
-
+    # Usar rapidfuzz para el merge con Wikidata
+    final_merged = merged_spotify_grammy.copy()
+    final_merged['matched_artist'] = final_merged['artist'].apply(
+        lambda x: process.extractOne(x, df_wikidata['artist'], scorer=fuzz.WRatio, score_cutoff=90)
+    )
+    final_merged['matched_artist_name'] = final_merged['matched_artist'].apply(
+        lambda x: x[0] if x else None
+    )
+    final_merged = pd.merge(
+        final_merged,
+        df_wikidata,
+        left_on='matched_artist_name',
+        right_on='artist',
+        how='left',
+        suffixes=('', '_wikidata')
+    ).drop(columns=['matched_artist', 'matched_artist_name'])
 
     if "won_grammy" in final_merged.columns:
         final_merged["won_grammy"] = final_merged["won_grammy"].fillna("No")
