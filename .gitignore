@@ -5,7 +5,5 @@ venv/
 credentials.json
 token.pickle
 dag/data_temp
-source/extract/__pycache__
-source/transform/__pycache__
-source/load/__pycache__
-source/__pycache__
+
+__pycache__/
