@@ -46,8 +46,8 @@ ETL-Musical/
 
 1. **Clona este repositorio**
    ```bash
-   git clone https://github.com/tu_usuario/ETL-Musical.git
-   cd ETL-Musical
+   git clone https://github.com/tu_usuario/ETL-Musical.git](https://github.com/Michelburgos/Workshop_2.git
+   cd Workshop_2
    ```
 
 2. **Crea y activa un entorno virtual**
