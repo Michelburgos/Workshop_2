@@ -46,7 +46,7 @@ ETL-Musical/
 
 1. **Clona este repositorio**
    ```bash
-   git clone https://github.com/tu_usuario/ETL-Musical.git](https://github.com/Michelburgos/Workshop_2.git
+   git clone https://github.com/Michelburgos/Workshop_2.git
    cd Workshop_2
    ```
 
@@ -69,10 +69,10 @@ ETL-Musical/
      ```
    - Crea usuario y base de datos:
      ```sql
-     CREATE USER postgres WITH PASSWORD 'pg';
-     ALTER USER postgres CREATEDB;
-     createdb -U postgres gra
-     createdb -U postgres gra_dimensional
+     CREATE USER 'tu_usuario' WITH PASSWORD 'tu_contraseña';
+     ALTER USER 'tu_usuario' CREATEDB;
+     createdb -U postgres 'la_db_de_grammys'
+     createdb -U postgres 'la_db_de_merge'
      ```
 
 5. **Configura el archivo `.env`**
@@ -89,19 +89,12 @@ ETL-Musical/
 
 ## 🚀 Cómo ejecutar el ETL
 
-1. **Inicializa Airflow**
-   ```bash
-   export AIRFLOW_HOME=~/airflow
-   airflow db init
-   ```
-
-2. **Crea el DAG**
+1. **Crea el DAG**
    Copia `etl_dag.py` a `~/airflow/dags/`.
 
-3. **Ejecuta el scheduler y la web UI**
+2. **Inicializar Airflow**
    ```bash
-   airflow scheduler
-   airflow webserver --port 8080
+      airflow standalone
    ```
 
 4. Accede a: `http://localhost:8080`  
