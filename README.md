@@ -3,7 +3,7 @@
 
 Este proyecto ETL recopila, transforma y almacena datos de artistas musicales desde tres fuentes principales: Spotify (CSV), los Premios Grammy (base de datos PostgreSQL) y Wikidata (API SPARQL). El objetivo es generar un dataset unificado y limpio para análisis posteriores mediante herramientas como Power BI o Python.
 
-## 🧰 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 ETL-Musical/
@@ -34,7 +34,7 @@ ETL-Musical/
 └── README.md
 ```
 
-## 📦 Requisitos
+## Requisitos
 
 - Python 3.8+
 - PostgreSQL
@@ -42,7 +42,7 @@ ETL-Musical/
 - Acceso a Google Drive (credenciales OAuth 2.0)
 - Archivo `.env` con las credenciales
 
-## ⚙️ Instalación
+## Instalación
 
 1. **Clona este repositorio**
    ```bash
@@ -87,7 +87,7 @@ ETL-Musical/
    GOOGLE_DRIVE_FOLDER_ID=tu_folder_id
    ```
 
-## 🚀 Cómo ejecutar el ETL
+## Cómo ejecutar el ETL
 
 1. **Crea el DAG**
    Copia `etl_dag.py` a `~/airflow/dags/`.
@@ -102,7 +102,7 @@ ETL-Musical/
 
 ---
 
-## 📊 Salida del Proyecto
+## Salida del Proyecto
 
 - Archivo final: `merged.csv`
 - Base de datos `merged_db` con los datos cargados.
@@ -111,7 +111,7 @@ ETL-Musical/
 
 ---
 
-## 🧑‍💻 Autor
+## Autor
 
 **Michel Dahiana Burgos Santos**  
 Proyecto académico de Ingeniería de Datos e Inteligencia Artificial
